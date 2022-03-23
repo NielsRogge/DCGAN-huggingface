@@ -164,3 +164,9 @@ tags
 
 # DS_Store (MacOS)
 .DS_Store
+
+# Images
+/images
+
+# Models
+/output

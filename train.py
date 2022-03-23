@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-# Copyright 2022 PyTorch and The HuggingFace Inc. team. All rights reserved.
+# Copyright (c) 2022 PyTorch contributors and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ Based on PyTorch's official tutorial: https://pytorch.org/tutorials/beginner/dcg
 
 import argparse
 import os
+import sys
+from pathlib import Path
 
 from datasets import load_dataset
 
@@ -38,7 +40,10 @@ import torch
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--dataset", type=str, default="mnist", help="Dataset to load from the HuggingFace hub."
+    "--dataset",
+    type=str,
+    default="mnist",
+    help="Dataset to load from the HuggingFace hub.",
 )
 parser.add_argument(
     "--num_workers", type=int, default=2, help="Number of workers when loading data"
@@ -83,6 +88,30 @@ parser.add_argument(
     default=0.5,
     help="adam: decay of first order momentum of gradient",
 )
+parser.add_argument(
+    "--push_to_hub",
+    action="store_true",
+    help="Whether to push the model to the HuggingFace hub after training.",
+)
+parser.add_argument(
+    "--pytorch_dump_folder_path",
+    required="--push_to_hub" in sys.argv,
+    type=Path,
+    help="Path to save the model.",
+)
+parser.add_argument(
+    "--model_name",
+    required="--push_to_hub" in sys.argv,
+    type=str,
+    help="Name of the model.",
+)
+parser.add_argument(
+    "--organization_name",
+    required=False,
+    default="huggan",
+    type=str,
+    help="Organization name to push to, in case args.push_to_hub is specified.",
+)
 args = parser.parse_args()
 print(args)
 
@@ -112,7 +141,8 @@ netD = Discriminator(
     num_channels=args.num_channels, hidden_size=args.discriminator_hidden_size
 )
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
+print("Using device:", device)
 netG.to(device)
 netD.to(device)
 criterion.to(device)
@@ -159,7 +189,10 @@ def transforms(examples):
 transformed_dataset = dataset.with_transform(transforms)
 
 dataloader = DataLoader(
-    transformed_dataset["train"], batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers
+    transformed_dataset["train"],
+    batch_size=args.batch_size,
+    shuffle=True,
+    num_workers=args.num_workers,
 )
 
 # ----------
@@ -257,7 +290,19 @@ for epoch in range(args.num_epochs):
         ):
             with torch.no_grad():
                 fake = netG(fixed_noise).detach().cpu()
-            #img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
+            # img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
             save_image(fake.data[:25], "images/%d.png" % i, nrow=5, normalize=True)
 
         iters += 1
+
+## push to hub
+if args.push_to_hub:
+    save_directory = args.pytorch_dump_folder_path
+    if not save_directory.exists():
+        save_directory.mkdir(parents=True)
+
+    # upload generator
+    netG.push_to_hub(
+        repo_path_or_name=save_directory / args.model_name,
+        organization=args.organization_name,
+    )
