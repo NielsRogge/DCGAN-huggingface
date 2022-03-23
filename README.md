@@ -1,11 +1,19 @@
 # DCGAN-huggingface
 
-An implementation of DCGAN, leveraging the HuggingFace ecosystem for getting data and pushing to the hub.
+An implementation of [DCGAN](https://arxiv.org/abs/1511.06434), leveraging the [HuggingFace](hf.co) ecosystem for processing data and pushing the model to the hub.
 
 To train the model with the default parameters (5 epochs, 64x64 images, etc.) on MNIST, simply do:
 
 ```
 python train.py
+```
+
+This will create a local "images" directory, containing generated images over the course of the training.
+
+To train on another dataset available on the hub, simply do:
+
+```
+python train.py --dataset cifar-10
 ```
 
 ## Training on your own data
@@ -27,9 +35,9 @@ from datasets import load_dataset
 # option 1: from local folder
 dataset = load_dataset("imagefolder", data_dir="path_to_folder")
 # option 2: from remote URL (e.g. a zip file)
-dataset = load_dataset("imagefolder", data_files="URL")
+dataset = load_dataset("imagefolder", data_files="URL to .zip file")
 
-# next: push to the hub
+# next: push to the hub (assuming git-LFS is installed)
 dataset.push_to_hub("huggan/my-awesome-dataset")
 ```
 
@@ -37,12 +45,6 @@ You can then simply pass the name of the dataset to the script:
 
 ```
 python train.py --dataset huggan/my-awesome-dataset
-```
-
-You can also train on an existing dataset from the hub:
-
-```
-python train.py --dataset cifar-10
 ```
 
 ## Pushing model to the hub
@@ -102,7 +104,8 @@ model.to(device)
 with torch.no_grad():
     z = torch.randn(1, 100, 1, 1, device=device)
     outputs = model(z)
+```
 
 # Citation
 
-This repo is entirely based on PyTorch's official [DCGAN tutorial](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html).
+This repo is entirely based on PyTorch's official [DCGAN tutorial](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html), but with added HuggingFace goodies.
