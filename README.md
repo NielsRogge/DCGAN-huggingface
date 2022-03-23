@@ -47,7 +47,7 @@ python train.py --dataset huggan/my-awesome-dataset
 
 ## Pushing model to the hub
 
-You can push your trained generator and discriminator to the hub after training by specifying the `push_to_hub` flag. 
+You can push your trained generator to the hub after training by specifying the `push_to_hub` flag. 
 Then, you can run the script as follows:
 
 ```
